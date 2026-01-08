@@ -1,0 +1,62 @@
+// ===========================================
+// MEU ARSENAL - Prisma Schema
+// ===========================================
+// Banco de dados preparado para SQLite (dev) e PostgreSQL (prod)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // SQLite para desenvolvimento, PostgreSQL para produção
+  // Basta mudar DATABASE_URL no .env para trocar
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================
+// Modelo de Usuário (Admin único)
+// ===========================================
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Hash bcrypt
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// ===========================================
+// Modelo de Item (Prompts, Templates, Snippets, etc.)
+// ===========================================
+model Item {
+  id          String   @id @default(cuid())
+  
+  // Tipo do item: prompt | template | snippet | tool | checklist
+  type        String
+  
+  // Informações básicas
+  title       String
+  description String?
+  content     String   // Conteúdo principal (texto do prompt, código, etc.)
+  
+  // Organização
+  tags        String   // JSON array de tags (SQLite não suporta arrays nativos)
+  category    String?
+  stack       String?  // Tecnologia/stack relacionada
+  
+  // Métricas
+  favorite    Boolean  @default(false)
+  usageCount  Int      @default(0)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([favorite])
+  @@index([category])
+  @@map("items")
+}

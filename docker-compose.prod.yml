@@ -1,0 +1,70 @@
+# ===========================================
+# Docker Compose - Produção com PostgreSQL
+# ===========================================
+# Use este arquivo para deploy em VPS com banco PostgreSQL
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Aplicação Next.js
+  # ===========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: meu-arsenal
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # PostgreSQL
+      - DATABASE_URL=postgresql://arsenal:${POSTGRES_PASSWORD:-arsenal_secret}@postgres:5432/arsenal?schema=public
+      
+      # NextAuth
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      
+      # Admin
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@arsenal.dev}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Arsenal@2024}
+    networks:
+      - arsenal-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ===========================================
+  # PostgreSQL
+  # ===========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: arsenal-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: arsenal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arsenal_secret}
+      POSTGRES_DB: arsenal
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - arsenal-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arsenal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  postgres-data:
+    driver: local
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  arsenal-network:
+    driver: bridge

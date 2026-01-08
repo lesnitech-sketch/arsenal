@@ -1,0 +1,78 @@
+# ===========================================
+# Docker Compose - Meu Arsenal
+# ===========================================
+# Configuração para desenvolvimento e produção
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Aplicação Next.js
+  # ===========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: meu-arsenal
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Banco de dados (SQLite para dev local)
+      - DATABASE_URL=file:/app/data/arsenal.db
+      
+      # NextAuth
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-sua-chave-secreta-aqui-gere-uma-nova}
+      
+      # Admin padrão
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@arsenal.dev}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Arsenal@2024}
+    volumes:
+      # Persistir banco de dados SQLite
+      - arsenal-data:/app/data
+    networks:
+      - arsenal-network
+    # Descomente para usar PostgreSQL
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+
+  # ===========================================
+  # PostgreSQL (comentado - ativar para produção)
+  # ===========================================
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: arsenal-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: arsenal
+  #     POSTGRES_PASSWORD: arsenal_secret_password
+  #     POSTGRES_DB: arsenal
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     - arsenal-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U arsenal"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  arsenal-data:
+    driver: local
+  # postgres-data:
+  #   driver: local
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  arsenal-network:
+    driver: bridge
